@@ -1,31 +1,52 @@
-#include <stdio.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <errno.h>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <unistd.h> 
+#include <string.h> 
+#include <sys/types.h> 
+#include <sys/socket.h> 
+#include <arpa/inet.h> 
+#include <netinet/in.h> 
+  
+#define PORT     1946
+#define MAXLINE 1024 
+  
+// Driver code 
+int main() { 
+    int sockfd; 
+    char buffer[MAXLINE];
+    struct sockaddr_in servaddr, cliaddr; 
+      
+    // Creating socket file descriptor 
+    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
+        perror("socket creation failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+      
+    memset(&servaddr, 0, sizeof(servaddr)); 
+    memset(&cliaddr, 0, sizeof(cliaddr)); 
+      
+    // Filling server information 
+    servaddr.sin_family    = AF_INET; // IPv4 
+    servaddr.sin_addr.s_addr = INADDR_ANY; 
+    servaddr.sin_port = htons(PORT); 
+      
+    // Bind the socket with the server address 
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
+            sizeof(servaddr)) < 0 ) 
+    { 
+        perror("bind failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+      
+    int len, n; 
 
-#define SERVER_PORT 1946
-
-struct sockaddr_in serv;
-int fd;
-int conn;
-char message[100] = "";
-
-int main(){
-  serv.sin_family = AF_INET;
-  serv.sin_port = htons(SERVER_PORT);
-  serv.sin_addr.s_addr = INADDR_ANY;
-  fd = socket(AF_INET, SOCK_DGRAM, 0);
-  bind(fd, (struct sockaddr *)&serv, sizeof(serv));
-  listen(fd,5);
-  while(conn = accept(fd, (struct sockaddr *)NULL, NULL)) {
-    int pid;
-    if((pid = fork()) == 0) {
-      while (recv(conn, message, 100, 0)>0) {
-        printf("Message Received: %s", message);
-        memset(message,0,sizeof(message));
-      }
-      exit(0);
-    }
+    while(1){
+      n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
+                MSG_WAITALL, ( struct sockaddr *) &cliaddr, 
+                &len); 
+      buffer[n] = '\0'; 
+      printf("%s\n", buffer); 
   }
+      
+  return 0; 
 }
